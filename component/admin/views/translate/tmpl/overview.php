@@ -176,10 +176,10 @@ if (isset($this->filterlist) && count($this->filterlist)>0){
     <td> <?php echo JText::_('TRANSLATION_NOT_EXISTING');?></td>
   </tr>
   <tr align="center">
-    <td> <img src="images/publish_g.png" width="12" height="12" border=0 alt="<?php echo JText::_( 'TRANSLATION_VISIBLE' );?>" />
+    <td> <img src=<?php echo JURI::base(true).'/templates/'.JFactory::getApplication()->getTemplate().'/images/admin/publish_g.png';?> width="12" height="12" border=0 alt="<?php echo JText::_( 'TRANSLATION_VISIBLE' );?>" />
     </td>
     <td> <?php echo JText::_('TRANSLATION_PUBLISHED');?>  |</td>
-    <td> <img src="images/publish_x.png" width="12" height="12" border=0 alt="<?php echo JText::_( 'FINISHED' );?>" />
+    <td> <img src=<?php echo JURI::base(true).'/templates/'.JFactory::getApplication()->getTemplate().'/images/admin/publish_x.png';?> width="12" height="12" border=0 alt="<?php echo JText::_( 'FINISHED' );?>" />
     </td>
     <td> <?php echo JText::_('TRANSLATION_NOT_PUBLISHED');?></td>
     <td> &nbsp;
