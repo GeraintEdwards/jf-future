@@ -1,9 +1,9 @@
 <?php
 /**
  * Joom!Fish - Multi Lingual extention and translation manager for Joomla!
- * Copyright (C) 2003 - 2011, Think Network GmbH, Munich
+ * Copyright (C) 2003 - 2012, Think Network GmbH, Munich
  *
- * All rights reserved.  The Joom!Fish project is a set of extentions for
+ * All rights reserved. The Joom!Fish project is a set of extentions for
  * the content management system Joomla!. It enables Joomla!
  * to manage multi lingual sites especially in all dynamic information
  * which are stored in the database.
@@ -15,12 +15,12 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,USA.
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,USA.
  *
  * The "GNU General Public License" (GPL) is available at
  * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
@@ -77,6 +77,17 @@ class TranslateController extends JController
 		$this->fileCode = JRequest::getVar('fileCode', '');
 		$this->_joomfishManager = JoomFishManager::getInstance();
 
+		$includePath = JRequest::getVar('includePath', '');
+		
+		$includePath = json_decode(base64_decode($includePath));
+		if($includePath)
+		foreach($includePath as $include)
+		{
+			if(isset($include->path))
+			$this->_joomfishManager->addIncludePath($include->path ,(isset($include->type) ? $include->type : null ));
+		
+		}
+
 		$this->registerTask('overview', 'showTranslate');
 		$this->registerTask('edit', 'editTranslation');
 		$this->registerTask('apply', 'saveTranslation');
@@ -104,11 +115,159 @@ class TranslateController extends JController
 		$this->view->setModel($model, true);
 
 		// Assign data for view
+		$includePath = JRequest::getVar('includePath', '');
+		$this->view->assignRef('includePath', $includePath);
+		
 		$this->view->assignRef('catid', $this->_catid);
 		$this->view->assignRef('select_language_id', $this->_select_language_id);
 		$this->view->assignRef('task', $this->task);
 		$this->view->assignRef('act', $this->act);
 
+	}
+
+	function translationMapSave()
+	{
+		$reference_id = JRequest::getVar('reference_id', '');
+		$translation_id = JRequest::getVar('translation_id', '');
+		
+		$item_id = JRequest::getVar('item_id', ''); //this must load for the ?
+		
+		$contentElement = $this->_joomfishManager->getContentElement($this->_catid);
+		$translationClass = $contentElement->getTranslationObjectClass();
+		$translationObject = new $translationClass( $this->_language_id, $contentElement );
+		
+		/*
+		$translationObject->translation_id = $translation_id;
+		$translationObject->reference_id = $reference_id;
+		*/
+		
+		$jfm = JoomFishManager::getInstance();
+		$language = $jfm->getLanguageByID($this->_language_id);
+		$lang_code = $language->code;
+		/*
+		json echo ?
+		*/
+		if($success = $translationObject->generateTranslationMapManual($reference_id,$translation_id,$contentElement->getTableName(),$lang_code))
+		{
+			//we tell the request ajax that is ok
+			echo '1';
+			exit;
+		}
+		//we tell the request ajax that is not ok
+		echo '0';
+		exit;
+		echo false;
+		return false;
+		/*
+		close the window
+		window.parent.parent.SqueezeBox.close();
+		
+		*/
+		//$translationObject->language_id = $this->_language_id;
+		/*
+		
+		$elementTable = $contentElement->getTable();
+		
+		$table = $translationObject->loadFromContentID($item_id);
+		
+		//we need an JTable object
+		$translationObject->getItemTable()
+		//$this->generateTranslationMap($table, $isNew, $contentElement->getTableName(), $elementTable);
+		$translationObject->generateTranslationMap( &$article, $isNew, $tablename, $elementTable=false){
+		
+		
+		
+		$translationObject->loadFromContentID($reference_id);
+		$transmaprows = $contentElement->getTranslationMap($this->_language_id);
+		$contentmaprows = $contentElement->getContentMap($this->_language_id);
+		*/
+	}
+
+
+	function translationmap()
+	{
+		// get the view
+		$this->view = $this->getView("translate", "html");
+
+		// Set the layout
+		$this->view->setLayout('translationmap');
+
+		// Assign data for view - should really do this as I go along
+		//$this->view->assignRef('showOrgLanguage', $showOrgLanguage);
+		/*
+		$this->view->assignRef('rows', $rows);
+		$this->view->assignRef('search', $search);
+		$this->view->assignRef('pageNav', $pageNav);
+		$this->view->assignRef('clist', $clist);
+		*/
+		$reference_id = JRequest::getVar('reference_id', '');
+		
+		$contentElement = $this->_joomfishManager->getContentElement($this->_catid);
+		$translationClass = $contentElement->getTranslationObjectClass();
+		$translationObject = new $translationClass( $this->_language_id, $contentElement );
+		
+		//$translationObject->readFromRow($reference_id);
+		$translationObject->loadFromContentID($reference_id);
+		//$model = $this->getModel('translate');
+		//an array of table objects
+		//$transmaprows = $model->getTranslationMap($this->_catid,$this->_language_id);
+		/*
+		TODO Filter
+		*/
+		
+		//$filters = JFactory::getApplication()->getUserStateFromRequest("com_joomfish.view.translationmap.filters", 'filters', array(0));
+		$filters = array(0);
+		$filter_language = JFactory::getApplication()->getUserStateFromRequest("com_joomfish.view.translationmap.filter_language", 'filter_language',null);
+		if($filter_language)
+		$filters['language'] = 'c.language=\''.$filter_language.'\'';
+		
+		$order = JFactory::getApplication()->getUserStateFromRequest("com_joomfish.view.translationmap.filter_order", 'filter_order', null);
+		$orderDir = JFactory::getApplication()->getUserStateFromRequest("com_joomfish.view.translationmap.filter_order_Dir", 'filter_order_Dir', null);
+		$this->view->assignRef('order', $order);
+		$this->view->assignRef('orderDir', $orderDir);
+		$this->view->assignRef('filter_language', $filter_language);
+		/*
+		$filters = JRequest::getVar('filters', array(0), 'default', 'array');
+		$order = JRequest::getVar('order', null);
+		
+		FB::dump($filters);
+		foreach($filters as $filter)
+		{
+			FB::dump($filter);
+		}
+		
+		
+		$transmaprows = $contentElement->getTranslationMap($this->_language_id);
+		
+		$this->view->assignRef('transmaprows', $transmarows);
+		
+		
+		$value = $app->getUserStateFromRequest($this->context . '.ordercol', 'filter_order', $ordering);
+			if (!in_array($value, $this->filter_fields))
+			{
+				$value = $ordering;
+				$app->setUserState($this->context . '.ordercol', $value);
+			}
+			$this->setState('list.ordering', $value);
+		
+		
+		
+		*/
+		
+		$contentmaprows = $contentElement->getContentMap($this->_language_id,$filters,$order,$orderDir);
+		$this->view->assignRef('contentmaprows', $contentmaprows);
+		
+		$this->view->assignRef('contentElement', $contentElement);
+		$this->view->assignRef('translationObject', $translationObject);
+		//$rows[$i] = $translationObject;
+		
+		$this->view->assignRef('reference_id', $reference_id);
+		/*
+		$this->view->assignRef('filterlist', $filterHTML);
+		*/
+		$this->view->assignRef('language_id', $this->_language_id);
+
+		$this->view->display();
 	}
 
 	/**
@@ -150,6 +309,7 @@ class TranslateController extends JController
 		$rows = null;
 		$total = 0;
 		$filterHTML = array();
+		$showOrgLanguage = null;
 		if ($language_id != -1 && isset($catid) && $catid != "")
 		{
 			$contentElement = $this->_joomfishManager->getContentElement($catid);
@@ -158,16 +318,23 @@ class TranslateController extends JController
 				$catid = "content";
 				$contentElement = $this->_joomfishManager->getContentElement($catid);
 			}
-			JLoader::import('models.TranslationFilter', JOOMFISH_ADMINPATH);
+			//JLoader::import('models.TranslationFilter', JOOMFISH_ADMINPATH);
+			JLoader::import('TranslationFilter', JoomfishExtensionHelper::getExtraPath('filters'));
 			$tranFilters = getTranslationFilters($catid, $contentElement);
-
+			
+			//only show column orig language if we have an language filter
+			//and treatment target is native
+			if($tranFilters && array_key_exists('language',$tranFilters) && $contentElement->getTarget() == 'native')
+			{
+				$showOrgLanguage = true;
+			}
+			
 			$total = $contentElement->countReferences($language_id, $tranFilters);
 
 			if ($total < $limitstart)
 			{
 				$limitstart = 0;
 			}
-
 			$db->setQuery($contentElement->createContentSQL($language_id, null, $limitstart, $limit, $tranFilters));
 			$rows = $db->loadObjectList();
 			if ($db->getErrorNum())
@@ -176,7 +343,6 @@ class TranslateController extends JController
 				// should not stop the page here otherwise there is no way for the user to recover
 				$rows = array();
 			}
-
 			// Manipulation of result based on further information
 			for ($i = 0; $i < count($rows); $i++)
 			{
@@ -185,7 +351,7 @@ class TranslateController extends JController
 				$translationObject->readFromRow($rows[$i]);
 				$rows[$i] = $translationObject;
 			}
-
+			
 			foreach ($tranFilters as $tranFilter)
 			{
 				$afilterHTML = $tranFilter->createFilterHTML();
@@ -193,18 +359,29 @@ class TranslateController extends JController
 					$filterHTML[$tranFilter->filterType] = $afilterHTML;
 			}
 		}
-
+		//FB::dump($rows);
+		/*
+		FB::dump(count($rows));
+		FB::dump($total);
+		
+		$db->setQuery("SELECT * from #__content");
+		$totalrows = $db->loadObjectList();
+		FB::dump(count($totalrows));
+		*/
+		
 		// Create the pagination object
 		jimport('joomla.html.pagination');
 		$pageNav = new JPagination($total, $limitstart, $limit);
 
 		// get list of element names
 		$elementNames[] = JHTML::_('select.option', '', JText::_('PLEASE_SELECT'));
-		//$elementNames[] = JHTML::_('select.option',  '-1', '- All Content elements' );
+		//$elementNames[] = JHTML::_('select.option', '-1', '- All Content elements' );
 		// force reload to make sure we get them all
 		$elements = $this->_joomfishManager->getContentElements(true);
+		
 		foreach ($elements as $key => $element)
 		{
+			//TODO i think we must work with the contentElementName
 			$elementNames[] = JHTML::_('select.option', $key, $element->Name);
 		}
 		$clist = JHTML::_('select.genericlist', $elementNames, 'catid', 'class="inputbox" size="1" onchange="if(document.getElementById(\'select_language_id\').value>=0) document.adminForm.submit();"', 'value', 'text', $catid);
@@ -216,13 +393,15 @@ class TranslateController extends JController
 		$this->view->setLayout('default');
 
 		// Assign data for view - should really do this as I go along
+		$this->view->assignRef('showOrgLanguage', $showOrgLanguage);
+		
 		$this->view->assignRef('rows', $rows);
 		$this->view->assignRef('search', $search);
 		$this->view->assignRef('pageNav', $pageNav);
 		$this->view->assignRef('clist', $clist);
 		$this->view->assignRef('language_id', $language_id);
 		$this->view->assignRef('filterlist', $filterHTML);
-		$this->view->assignRef('language_id', $language_id);
+		//$this->view->assignRef('language_id', $language_id);
 
 		$this->view->display();
 		//TranslateViewTranslate::showTranslationOverview( $rows, $search, $pageNav, $langlist, $clist, $catid ,$language_id,$filterHTML );
@@ -252,7 +431,7 @@ class TranslateController extends JController
 
 		$translationObject = null;
 
-
+		$contentElement = null;
 		if (isset($catid) && $catid != "")
 		{
 			$contentElement = $this->_joomfishManager->getContentElement($catid);
@@ -269,7 +448,8 @@ class TranslateController extends JController
 		}
 
 		// get existing filters so I can remember them!
-		JLoader::import('models.TranslationFilter', JOOMFISH_ADMINPATH);
+		//JLoader::import('models.TranslationFilter', JOOMFISH_ADMINPATH);
+		JLoader::import('TranslationFilter', JoomfishExtensionHelper::getExtraPath('filters'));
 		$tranFilters = getTranslationFilters($catid, $contentElement);
 
 		// get the view
@@ -281,8 +461,10 @@ class TranslateController extends JController
 		// Need to load com_config language strings!
 		$lang = JFactory::getLanguage();
 		$lang->load('com_config');
-
+		
+		
 		// Assign data for view - should really do this as I go along
+		$this->view->assignRef('contentElement', $contentElement);
 		$this->view->assignRef('translationObject', $translationObject);
 		$this->view->assignRef('tranFilters', $tranFilters);
 		$this->view->assignRef('select_language_id', $select_language_id);
@@ -339,9 +521,11 @@ class TranslateController extends JController
 			$this->view->message = JText::_('Cannot save - invalid catid');
 		}
 
-		if ($this->task == "translate.apply")
+		if ($this->task == "apply")
 		{
-			$cid = $translationObject->id . "|" . $id . "|" . $language_id;
+			
+			//$cid = ($translationObject->id ? $translationObject->id : $translationObject->translation_id) . "|" . $id . "|" . $language_id;
+			$cid = ($translationObject->translation_id ? $translationObject->translation_id : '') . "|" . $id . "|" . $language_id;
 			JRequest::setVar('cid', array($cid));
 			$this->editTranslation();
 		}
@@ -389,7 +573,6 @@ class TranslateController extends JController
 		foreach ($cid as $cid_row)
 		{
 			list($translation_id, $contentid, $language_id) = explode('|', $cid_row);
-
 			$contentElement = $this->_joomfishManager->getContentElement($catid);
 			$translationClass = $contentElement->getTranslationObjectClass();
 			$translationObject = new $translationClass( $language_id, $contentElement );
@@ -421,7 +604,7 @@ class TranslateController extends JController
 		$this->view->setLayout('preview');
 
 		// Assign data for view - should really do this as I go along
-		//$this->view->assignRef('rows'   , $rows);
+		//$this->view->assignRef('rows' , $rows);
 		$this->view->display();
 
 	}
@@ -525,9 +708,9 @@ class TranslateController extends JController
 		$langlist = "";
 
 		$langOptions[] = JHTML::_('select.option', '-1', JText::_('SELECT_LANGUAGE'));
-		//$langOptions[] = JHTML::_('select.option',  '-2', JText::_('SELECT_NOTRANSLATION') );
+		//$langOptions[] = JHTML::_('select.option', '-2', JText::_('SELECT_NOTRANSLATION') );
 
-		$langActive = $this->_joomfishManager->getLanguages(false);  // all languages even non active once
+		$langActive = $this->_joomfishManager->getLanguages(false); // all languages even non active once
 
 		if (count($langActive) > 0)
 		{
@@ -540,7 +723,7 @@ class TranslateController extends JController
 
 		// get list of element names
 		$elementNames[] = JHTML::_('select.option', '', JText::_('PLEASE_SELECT'));
-		//$elementNames[] = JHTML::_('select.option',  '-1', '- All Content elements' );
+		//$elementNames[] = JHTML::_('select.option', '-1', '- All Content elements' );
 		$elements = $this->_joomfishManager->getContentElements(true);
 		foreach ($elements as $key => $element)
 		{

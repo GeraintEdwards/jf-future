@@ -1,9 +1,9 @@
 <?php
 /**
  * Joom!Fish - Multi Lingual extention and translation manager for Joomla!
- * Copyright (C) 2003 - 2011, Think Network GmbH, Munich
+ * Copyright (C) 2003 - 2012, Think Network GmbH, Munich
  *
- * All rights reserved.  The Joom!Fish project is a set of extentions for
+ * All rights reserved. The Joom!Fish project is a set of extentions for
  * the content management system Joomla!. It enables Joomla!
  * to manage multi lingual sites especially in all dynamic information
  * which are stored in the database.
@@ -15,12 +15,12 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,USA.
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,USA.
  *
  * The "GNU General Public License" (GPL) is available at
  * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
@@ -44,9 +44,95 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
  * @package joomfish
  * @since	2.1
  */
-class  JoomfishExtensionHelper  {
+class JoomfishExtensionHelper {
 	
 	private static $imagePath;
+	
+	
+	/**
+	MS: add
+	 * get the extraPath
+	 * @return	mixed array or string
+	 */
+	public function getTreatmentIncludePath($treatment = '') 
+	{
+		if(!$treatment)
+		{
+			return null;
+		}
+		$includePath = null;
+		if(isset($treatment['includePath']))
+		{
+			if(is_array($treatment['includePath']))
+			{
+				//check for attributes
+				if(isset($treatment['includePath']['attributes']['extension']) && $treatment['includePath']['attributes']['extension'] && isset($treatment['extension']) )
+				{
+					//ok we need to get the extension something in joomla core to help?
+					//hm only Component
+					$extension = $treatment['extension'];
+					if (strpos($treatment['extension'], "com_") ===0)
+					{
+						$folder = '';
+						if(isset($treatment['includePath']['value']))
+						{
+							$folder = DS.$treatment['includePath']['value'];
+						}
+						if(isset($treatment['includePath']['attributes']['site']) && $treatment['includePath']['attributes']['site'])
+						{
+							$includePath = (JFolder::exists(JPATH_SITE.DS.'components'.DS.$extension.$folder) ? JPATH_SITE.DS.'components'.DS.$extension.$folder : null);
+						}
+						else
+						{
+							$includePath = (JFolder::exists(JPATH_ADMINISTRATOR.DS.'components'.DS.$extension.$folder) ? JPATH_ADMINISTRATOR.DS.'components'.DS.$extension.$folder : null);
+						}
+					}
+				}
+			}
+			else
+			{
+				$includePath = (JFolder::exists(JPATH_ROOT.DS.$treatment['includePath']) ? JPATH_ROOT.DS.$treatment['includePath'] : null);
+			}
+		}
+		if($includePath)
+		{
+			$includePath = JPATH::clean($includePath);
+		}
+		return $includePath;
+	}
+	
+	
+	/**
+	MS: add
+	 * get the extraPath
+	 * @return	mixed array or string
+	 */
+	public static function getExtraPath($path = '') 
+	{
+		static $extraPaths;
+		if($path && isset($extraPaths[$path]) )
+		{
+			return $extraPaths[$path];
+		}
+		if (isset($extraPaths) && !$path) 
+		{
+			return $extraPaths;
+		}
+		$extraPaths = array();
+		$base = JPATH::clean(JOOMFISH_ADMINPATH .DS. 'models'.DS.'jf');
+		$extraPaths['base'] = $base;
+		$extraPaths['element'] = $base.DS.'element';	// ContentElement
+		$extraPaths['filters'] = $base.DS.'filters';	// TranslationFilter
+		$extraPaths['forms'] = $base.DS.'forms';		// TranslateForms
+		$extraPaths['models'] = $base.DS.'models';		// TranslateModel
+		$extraPaths['objects'] = $base.DS.'objects';	// TranslationObject
+		$extraPaths['params'] = $base.DS.'params';		// TranslateParam
+		$extraPaths['xmls'] = $base.DS.'xmls';			// contentelements
+		
+		return ($path ? $extraPaths[$path] : $extraPaths);
+		
+	}
+	
 	
 	/**
 	 * Is JoomFish activated and ready to work?
@@ -74,7 +160,7 @@ class  JoomfishExtensionHelper  {
 	 * The component parameters will be used as folder path within the template or starting with the root directory of your site
 	 * If the image is found in the current template + folder this reference is returned. Otherwise the reference from
 	 * JPATH_SITE + folder. The reference is not verified if the image exists!
-	 *  
+	 * 
 	 * @param	$language	JFLnaguage language object including the detailed information
 	 * @return	string		Path to the image found
 	 */
@@ -87,7 +173,7 @@ class  JoomfishExtensionHelper  {
 		$file = '';
 
 		if(!empty($language->image_ext)) {
-			$file =  basename($language->image_ext);
+			$file = basename($language->image_ext);
 			$folder = dirname($language->image_ext);
 			
 		} elseif (!empty( $language->image)) {
@@ -119,6 +205,7 @@ class  JoomfishExtensionHelper  {
 				self::$imagePath[$path] = $path;
 			}
 		}
+		self::$imagePath[$path] = str_replace(DS,'/',self::$imagePath[$path]);
 		return self::$imagePath[$path];
 	}	
 }

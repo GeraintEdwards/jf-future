@@ -1,9 +1,9 @@
 <?php
 /**
  * Joom!Fish - Multi Lingual extention and translation manager for Joomla!
- * Copyright (C) 2003 - 2011, Think Network GmbH, Munich
+ * Copyright (C) 2003 - 2012, Think Network GmbH, Munich
  *
- * All rights reserved.  The Joom!Fish project is a set of extentions for
+ * All rights reserved. The Joom!Fish project is a set of extentions for
  * the content management system Joomla!. It enables Joomla!
  * to manage multi lingual sites especially in all dynamic information
  * which are stored in the database.
@@ -15,12 +15,12 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,USA.
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307,USA.
  *
  * The "GNU General Public License" (GPL) is available at
  * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
@@ -103,7 +103,8 @@ class LanguagesModelLanguages extends JFModel
 			$this->loadLanguages();
 		}
 		
-		$jfLanguage = $this->getTable('JFLanguage');
+		//MS: changed $jfLanguage = $this->getTable('JFLanguage');
+		$jfLanguage = $this->getTable('JFLanguage','Table');
 		$this->_languages['new'] = $jfLanguage;
 	}
 
@@ -113,7 +114,7 @@ class LanguagesModelLanguages extends JFModel
 	public function store($cid, $data) {
 		if( is_array($cid) && count($cid)>0 ) {
 			for ($i=0; $i<count($cid); $i++) {
-				$jfLang = $this->getTable('JFLanguage');
+				$jfLang = $this->getTable('JFLanguage','Table');
 				$jfLang->set('lang_id', $cid[$i]);
 				$jfLang->set('title', $data['title'][$i]);
 				$jfLang->set('title_native', $data['title_native'][$i]);
@@ -156,7 +157,7 @@ class LanguagesModelLanguages extends JFModel
 	public function remove($cid, $data) {
 		if( is_array($cid) && count($cid)>0 ) {
 			for ($i=0; $i<count($cid); $i++) {
-				$jfLang = $this->getTable('JFLanguage');
+				$jfLang = $this->getTable('JFLanguage','Table');
 				if( !$jfLang->delete($cid[$i]) ) {
 					$this->setError($jfLang->getError());
 					return false;
@@ -176,7 +177,7 @@ class LanguagesModelLanguages extends JFModel
 	 */
 	public function setDefault($lang_id) {
 		
-		$jfLang = $this->getTable('JFLanguage');
+		$jfLang = $this->getTable('JFLanguage','Table');
 		$jfLang->load($lang_id);
 		
 		// We define that the default language can only be changed for the Joomla Client - not the admin
@@ -209,7 +210,7 @@ class LanguagesModelLanguages extends JFModel
 	 * Loads content languages based on table information
 	 */
 	private function loadLanguages() {
-		global  $option;
+		global $option;
 		$db = JFactory::getDBO();
 
 		$filter_order		= JFactory::getApplication()->getUserStateFromRequest( $option.'filter_order',		'filter_order',		'lext.ordering',	'cmd' );
@@ -243,10 +244,10 @@ class LanguagesModelLanguages extends JFModel
 		
 		foreach ($frontlanguages AS &$frontlang) {
 			$langarr 					= explode ('-', $frontlang->lang_code);
-			$frontlang->lang_id   		= null;
+			$frontlang->lang_id			= null;
 			$frontlang->title_native 	= $frontlang->title;
-			$frontlang->sef   			= $langarr[0];
-			$frontlang->published   	= &$frontlang->enabled;
+			$frontlang->sef				= $langarr[0];
+			$frontlang->published		= &$frontlang->enabled;
 			$frontlang->image_ext 		= '/media/com_joomfish/default/flags/' .$langarr[0]. '.gif';
 		}
 		
@@ -259,7 +260,7 @@ class LanguagesModelLanguages extends JFModel
 		// We convert any language of the table into a JFLanguage object. As within the language list the key will be the language code
 		$this->_languages = array();
 		foreach($languages as $language) {
-			$jfLanguage = $this->getTable('JFLanguage');
+			$jfLanguage = $this->getTable('JFLanguage','Table');
 			$jfLanguage->bind($language);
 
 			$this->_languages[$jfLanguage->lang_code] = $jfLanguage;
